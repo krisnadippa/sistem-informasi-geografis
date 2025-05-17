@@ -8,7 +8,6 @@ const Auth = () => {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,10 +15,7 @@ const Auth = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   const toggleForm = () => {
@@ -34,19 +30,11 @@ const Auth = () => {
         return false;
       }
     } else {
-      if (
-        !formData.name ||
-        !formData.email ||
-        !formData.password ||
-        !formData.confirmPassword
-      ) {
+      if (!formData.name || !formData.email || !formData.password) {
         setError("Semua kolom harus diisi");
         return false;
       }
-      if (formData.password !== formData.confirmPassword) {
-        setError("Password tidak cocok");
-        return false;
-      }
+
       if (formData.password.length < 6) {
         setError("Password minimal 6 karakter");
         return false;
@@ -55,33 +43,76 @@ const Auth = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setLoading(true);
-    setTimeout(() => {
+
+    if (isLogin) {
       try {
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            name: formData.name || "User",
+        const response = await fetch("https://gisapis.manpits.xyz/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
             email: formData.email,
-          })
-        );
-        navigate("/home");
-      } catch (error) {
-        console.error("Authentication error:", error);
-        setError("Terjadi kesalahan saat autentikasi. Silakan coba lagi.");
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.meta?.token) {
+          localStorage.setItem("token", data.meta.token);
+          localStorage.setItem("isAuthenticated", "true");
+          navigate("/home");
+        } else {
+          setError(data.meta?.message || "Login gagal");
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        setError("Terjadi kesalahan saat login. Coba lagi nanti.");
       } finally {
         setLoading(false);
       }
-    }, 1000);
+    } else {
+      try {
+        const response = await fetch(
+          "https://gisapis.manpits.xyz/api/register",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: formData.name,
+              email: formData.email,
+              password: formData.password,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.meta?.token) {
+          localStorage.setItem("token", data.meta.token);
+          localStorage.setItem("isAuthenticated", "true");
+          navigate("/home");
+        } else {
+          setError(data.meta?.message || "Registrasi gagal");
+        }
+      } catch (err) {
+        console.error("Register error:", err);
+        setError("Terjadi kesalahan saat registrasi. Coba lagi nanti.");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   return (
     <div className="auth-container">
-      {/* Bagian Welcome Text */}
       <div className="auth-welcome">
         <h1>Welcome!</h1>
         <p>
@@ -90,7 +121,6 @@ const Auth = () => {
         </p>
       </div>
 
-      {/* Bagian Form Login/Register */}
       <div className={`auth-card ${isLogin ? "login" : "register"}`}>
         <div className="auth-header">
           <h2>{isLogin ? "Login" : "Register"}</h2>
@@ -138,21 +168,7 @@ const Auth = () => {
               required
             />
           </div>
-          {!isLogin && (
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Konfirmasi Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Konfirmasi password"
-                disabled={loading}
-                required
-              />
-            </div>
-          )}
+
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? "Loading..." : isLogin ? "Login" : "Register"}
           </button>
