@@ -1,0 +1,76 @@
+.add-location-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f4f4f4;
+  padding: 20px;
+}
+
+.add-location-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.add-location-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.add-location-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-location-form label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #444;
+}
+
+.add-location-form input {
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  width: 100%;
+}
+
+.add-location-form button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.add-location-form button:hover {
+  background-color: #218838;
+}
+
+.add-location-back {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.add-location-back a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.add-location-back a:hover {
+  text-decoration: underline;
+}
