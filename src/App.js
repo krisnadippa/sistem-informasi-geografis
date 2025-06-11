@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import Auth from "./Auth.js";
 import Home from "./Home.js";
+import RuasJalan from "./RuasJalan.js";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Auth />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/ruas-jalan" element={<RuasJalan />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>

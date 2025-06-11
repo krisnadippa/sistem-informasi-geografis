@@ -1,3 +1,138 @@
+/* Container Utama Form */
+.add-form-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000; /* Pastikan lebih tinggi dari z-index peta */
+
+  width: 400px; /* Lebar form */
+  max-height: calc(
+    100vh - 40px
+  ); /* Batas tinggi maksimal agar tidak keluar layar */
+
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+
+  /* Menggunakan flexbox untuk mengatur layout header, body, footer */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Form (Judul dan Tombol Tutup) */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Body Form (Area yang bisa di-scroll) */
+.form-body {
+  padding: 16px 24px;
+  overflow-y: auto; /* Aktifkan scroll jika konten melebihi tinggi */
+  flex-grow: 1; /* Memastikan body mengisi ruang yang tersedia */
+}
+
+/* Grup Input & Label */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.form-group input {
+  color: black;
+}
+
+/* Style untuk semua input, select */
+.form-body input[type="text"],
+.form-body input[type="number"],
+.form-body select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-body input:focus,
+.form-body select:focus {
+  outline: none;
+  border-color: #3b82f6; /* Warna biru saat fokus */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
+.form-body input[readonly] {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Footer Form (Area Tombol) */
+.form-footer {
+  display: flex;
+  justify-content: flex-end; /* Tombol di pojok kanan */
+  gap: 12px; /* Jarak antar tombol */
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Styling Tombol */
+.button-primary,
+.button-secondary {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.button-primary {
+  background-color: #2563eb;
+  color: white;
+}
+.button-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.button-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.button-secondary:hover {
+  background-color: #d1d5db;
+}
+
 /* Home.css */
 .home-container {
   display: flex;

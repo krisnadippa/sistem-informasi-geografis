@@ -160,6 +160,10 @@ const Home = () => {
           <div className="menu-item active">
             <span>Dashboard</span>
           </div>
+
+          <div className="menu-item" onClick={() => navigate("/ruas-jalan")}>
+            <span>Ruas Jalan</span>
+          </div>
         </div>
 
         <div className="logout-button" onClick={handleLogout}>

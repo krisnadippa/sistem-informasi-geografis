@@ -45,6 +45,7 @@ const Auth = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!validateForm()) return;
     setLoading(true);
 
@@ -95,10 +96,8 @@ const Auth = () => {
 
         const data = await response.json();
 
-        if (response.ok && data.meta?.token) {
-          localStorage.setItem("token", data.meta.token);
-          localStorage.setItem("isAuthenticated", "true");
-          navigate("/home");
+        if (response.ok) {
+          navigate("/login");
         } else {
           setError(data.meta?.message || "Registrasi gagal");
         }
