@@ -1,15 +1,28 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMapEvents,
-} from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "leaflet-draw/dist/leaflet.draw.css";
+import "leaflet/dist/leaflet.css";
+import { useEffect, useState } from "react";
+import {
+  FeatureGroup,
+  MapContainer,
+  Polyline,
+  Popup,
+  TileLayer,
+} from "react-leaflet";
+import { EditControl } from "react-leaflet-draw";
+import { useNavigate } from "react-router-dom";
 import "./Home.css";
+import axios from "axios";
+import {
+  fetchDesa,
+  fetchExisting,
+  fetchJenisJalan,
+  fetchKecamatan,
+  fetchKondisi,
+  fetchRegion,
+} from "./lib/data";
+import polyline from "@mapbox/polyline";
+import { decode } from "polyline-encoded";
 
 // Fix leaflet icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -22,54 +35,32 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-const Home = () => {
-  const [user, setUser] = useState({ name: "User", email: "" });
-  const [locations, setLocations] = useState([]);
-  const [newLocation, setNewLocation] = useState(null);
-  const [locationForm, setLocationForm] = useState({ name: "", desc: "" });
+const RuasJalan = () => {
+  const [user, setUser] = useState({
+    name: "krisnadippa",
+    email: "krisnapradipa240@gmail.com",
+  });
+
+  const [ruasJalan, setRuasJalan] = useState([]);
+  const [createdLineLatLngs, setCreatedLineLatLngs] = useState([]);
+  const [calculatedPanjang, setCalculatedPanjang] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [kabupaten, setKabupaten] = useState([]);
+  const [kecamatan, setKecamatan] = useState([]);
+  const [desa, setDesa] = useState([]);
+
+  const [selectedKabupatenId, setSelectedKabupatenId] = useState(null);
+  const [selectedKecamatanId, setSelectedKecamatanId] = useState(null);
+
+  const [existing, setExisting] = useState([]);
+  const [kondisi, setKondisi] = useState([]);
+  const [jenisJalan, setJenisJalan] = useState([]);
+
+  const [showForm, setShowForm] = useState(false);
+
   const navigate = useNavigate();
-
-  // Autentikasi dan ambil user
-  useEffect(() => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-    if (!isAuthenticated) {
-      navigate("/");
-      return;
-    }
-
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    if (userData.name) {
-      setUser(userData);
-    }
-  }, [navigate]);
-
-  // Fetch locations
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await fetch("http://localhost:2246/api/locations");
-        const result = await response.json();
-
-        const formattedLocations = result.locations
-          .filter(
-            (loc) =>
-              Math.abs(loc.latitude) <= 90 && Math.abs(loc.longitude) <= 180
-          )
-          .map((loc) => ({
-            id: loc.id,
-            name: loc.location_name,
-            desc: loc.description,
-            position: [loc.latitude, loc.longitude],
-          }));
-
-        setLocations(formattedLocations);
-      } catch (error) {
-        console.error("Gagal mengambil data lokasi:", error);
-      }
-    };
-
-    fetchLocations();
-  }, []);
 
   // Logout
   const handleLogout = () => {
@@ -78,67 +69,187 @@ const Home = () => {
     navigate("/");
   };
 
-  // Map click handler
-  const MapClickHandler = () => {
-    useMapEvents({
-      click(e) {
-        const { lat, lng } = e.latlng;
-        setNewLocation({ lat, lng });
-        setLocationForm({ name: "", desc: "" });
-      },
-    });
-    return null;
-  };
-
-  // Submit form to add location
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (locationForm.name && locationForm.desc && newLocation) {
-      const newLoc = {
-        location_name: locationForm.name,
-        description: locationForm.desc,
-        latitude: parseFloat(newLocation.lat),
-        longitude: parseFloat(newLocation.lng),
-      };
-
+  // FETCH LINE RUAS JALAN
+  useEffect(() => {
+    const fetchRuasJalan = async () => {
       try {
-        const response = await fetch("http://localhost:2246/api/locations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newLoc),
-        });
+        const authToken = localStorage.getItem("token");
 
-        if (!response.ok) {
-          throw new Error("Gagal menambahkan lokasi ke server");
+        const response = await axios.get(
+          `https://gisapis.manpits.xyz/api/ruasjalan`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        const decodedRuas = response.data.ruasjalan.map((ruas) => ({
+          ...ruas,
+          pathsDecoded: L.Polyline.fromEncoded(ruas.paths).getLatLngs(),
+        }));
+
+        setRuasJalan(decodedRuas);
+      } catch (error) {
+        console.error("Error fetching ruas jalan data:", error);
+      }
+    };
+
+    fetchRuasJalan();
+  }, []);
+
+  // FETCH INITIAL DATA
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [kab, eks, kond, jenis] = await Promise.all([
+          fetchRegion(),
+          fetchExisting(),
+          fetchKondisi(),
+          fetchJenisJalan(),
+        ]);
+
+        setKabupaten(kab?.data?.kabupaten || []);
+        setExisting(eks?.data?.eksisting || []);
+        setKondisi(kond?.data?.eksisting || []);
+        setJenisJalan(jenis?.data?.eksisting || []);
+      } catch (error) {
+        console.error("Gagal mengambil data awal:", error);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // FETCH KECAMATAN/DESA BASED ON SELECTED KABUPATEN/KECAMATAN
+  useEffect(() => {
+    const fetchDependentData = async () => {
+      try {
+        if (selectedKabupatenId) {
+          const response = await fetchKecamatan({
+            kabupatenId: selectedKabupatenId,
+          });
+          setKecamatan(response.data.kecamatan || []);
+          setDesa([]); // Reset desa saat kabupaten berubah
         }
 
-        // Ambil ulang data dari API setelah menambahkan lokasi
-        const updatedResponse = await fetch(
-          "http://localhost:2246/api/locations"
-        );
-        const updatedResult = await updatedResponse.json();
-
-        const formattedLocations = updatedResult.locations
-          .filter(
-            (loc) =>
-              Math.abs(loc.latitude) <= 90 && Math.abs(loc.longitude) <= 180
-          )
-          .map((loc) => ({
-            id: loc.id,
-            name: loc.location_name,
-            desc: loc.description,
-            position: [loc.latitude, loc.longitude],
-          }));
-
-        setLocations(formattedLocations); // Update state locations
-        setNewLocation(null); // Reset the new location state
-        setLocationForm({ name: "", desc: "" }); // Reset form
+        if (selectedKecamatanId) {
+          const response = await fetchDesa({
+            kecamatanId: selectedKecamatanId,
+          });
+          setDesa(response.data.desa || []);
+        }
       } catch (error) {
-        console.error("Gagal mengirim data:", error);
-        alert("Terjadi kesalahan saat mengirim data ke server");
+        console.error("Gagal mengambil data kecamatan/desa:", error);
       }
+    };
+
+    fetchDependentData();
+  }, [selectedKabupatenId, selectedKecamatanId]);
+
+  const _created = (e) => {
+    const latlngs = e.layer.getLatLngs();
+    setCreatedLineLatLngs(latlngs);
+
+    let totalLength = 0;
+    for (let i = 0; i < latlngs.length - 1; i++) {
+      totalLength += latlngs[i].distanceTo(latlngs[i + 1]);
+    }
+
+    const lengthInKm = (totalLength / 1000).toFixed(2);
+    setCalculatedPanjang(parseFloat(lengthInKm));
+
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const encodedPath = polyline.encode(
+      createdLineLatLngs.map((point) => [point.lat, point.lng])
+    );
+
+    const formData = new FormData(e.currentTarget);
+    const nama_ruas = formData.get("nama_ruas");
+    const panjang = formData.get("panjang");
+    const lebar = formData.get("lebar");
+    const desa_id = formData.get("desa_id");
+    const eksisting_id = formData.get("eksisting_id");
+    const kondisi_id = formData.get("kondisi_id");
+    const jenisjalan_id = formData.get("jenisjalan_id");
+    const keterangan = formData.get("keterangan");
+    const paths = encodedPath;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `https://gisapis.manpits.xyz/api/ruasjalan`,
+        {
+          paths,
+          desa_id,
+          kode_ruas: nama_ruas,
+          nama_ruas,
+          panjang,
+          lebar,
+          eksisting_id,
+          kondisi_id,
+          jenisjalan_id,
+          keterangan,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Tambahkan ruas baru ke state agar langsung tampil di peta
+      const ruasBaru = {
+        id: res.data?.ruasjalan?.id || Date.now(),
+        nama_ruas,
+        panjang,
+        keterangan,
+        pathsDecoded: createdLineLatLngs,
+      };
+      setRuasJalan((prev) => [...prev, ruasBaru]);
+
+      // Reset form
+      e.currentTarget.reset();
+
+      setError("");
+    } catch (error) {
+      if (error?.response?.data.message === 500) {
+        setError("Data yang dimasukkan tidak valid. Silakan periksa kembali.");
+      }
+    } finally {
+      setLoading(false);
+
+      // Sembunyikan form
+      setShowForm(false);
+    }
+  };
+
+  const hapusRuas = async (idRuas) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.delete(
+        `https://gisapis.manpits.xyz/api/ruasjalan/${idRuas}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Ruas berhasil dihapus:", response.data);
+
+      // Perbarui daftar ruas setelah penghapusan
+      setRuasJalan((prev) => prev.filter((ruas) => ruas.id !== idRuas));
+    } catch (error) {
+      console.error("Gagal menghapus ruas jalan:", error);
+      alert("Gagal menghapus ruas. Silakan coba lagi.");
     }
   };
 
@@ -158,11 +269,14 @@ const Home = () => {
 
         <div className="sidebar-menu">
           <div className="menu-item active">
-            <span>Dashboard</span>
+            <span>Add Ruas Jalan</span>
           </div>
-
-          <div className="menu-item" onClick={() => navigate("/ruas-jalan")}>
-            <span>Ruas Jalan</span>
+          <div
+            className="menu-item"
+            onClick={() => navigate("/detail-ruas-jalan")}
+            style={{ cursor: "pointer" }}
+          >
+            <span>Detail Ruas Jalan</span>
           </div>
         </div>
 
@@ -178,69 +292,212 @@ const Home = () => {
 
         <div className="content">
           <div className="map-container">
+            {/* Form */}
+            {showForm && (
+              <form
+                id="ruasForm"
+                className="add-form-container"
+                onSubmit={handleSubmit}
+              >
+                <div className="form-header">
+                  <h3>Tambah Ruas Jalan</h3>
+                </div>
+
+                <div className="form-body">
+                  {error && <div className="form-error-message">{error}</div>}
+                  <div className="form-group">
+                    <label htmlFor="nama_ruas">Nama Ruas</label>
+                    <input
+                      type="text"
+                      id="nama_ruas"
+                      name="nama_ruas"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="kabupaten">Kabupaten</label>
+                    <select
+                      id="kabupaten"
+                      name="kabupaten"
+                      required
+                      onChange={(e) => {
+                        const selectedId = Number(e.target.value);
+                        setSelectedKabupatenId(selectedId);
+                      }}
+                    >
+                      <option value="">Pilih kabupaten</option>
+                      {kabupaten.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.kabupaten}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="kecamatan">Kecamatan</label>
+                    <select
+                      id="kecamatan"
+                      name="kecamatan"
+                      required
+                      onChange={(e) => {
+                        const selectedId = Number(e.target.value);
+                        setSelectedKecamatanId(selectedId);
+                      }}
+                    >
+                      <option value="">Pilih kecamatan</option>
+                      {kecamatan.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.value}{" "}
+                          {/* Pastikan "value" memang nama kecamatannya */}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="desa_id">Desa</label>
+                    <select id="desa_id" name="desa_id" required>
+                      <option value="">Pilih desa</option>
+                      {desa.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.value}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="panjang">Panjang (km)</label>
+                    <input
+                      type="number"
+                      id="panjang"
+                      name="panjang"
+                      required
+                      value={calculatedPanjang}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="lebar">Lebar (meter)</label>
+                    <input type="number" id="lebar" name="lebar" required />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="eksisting_id">Existing</label>
+                    <select id="eksisting_id" name="eksisting_id" required>
+                      <option value="">Pilih existing</option>
+                      {existing.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.eksisting}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="kondisi_id">Kondisi</label>
+                    <select id="kondisi_id" name="kondisi_id" required>
+                      <option value="">Pilih kondisi</option>
+                      {kondisi.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.kondisi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="jenisjalan_id">Jenis Jalan</label>
+                    <select id="jenisjalan_id" name="jenisjalan_id" required>
+                      <option value="">Pilih jenis jalan</option>
+                      {jenisJalan.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.jenisjalan}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="keterangan">Keterangan</label>
+                    <input
+                      type="text"
+                      id="keterangan"
+                      name="keterangan"
+                      required
+                    />
+                  </div>
+
+                  {/* --- Tombol Aksi Form --- */}
+                  <div className="form-actions">
+                    <button
+                      type="button" // Gunakan type="button" agar tidak men-submit form
+                      className="button-secondary"
+                      onClick={() => setShowForm(false)} // Menyembunyikan form saat diklik
+                    >
+                      Kembali
+                    </button>
+                    <button
+                      type="submit"
+                      className="button-primary"
+                      disabled={loading}
+                    >
+                      {loading ? "Menyimpan..." : "Tambah Ruas"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
             <MapContainer
               center={[-8.579585, 115.234219]}
-              zoom={12}
+              zoom={8}
               style={{ height: "100%", width: "100%" }}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapClickHandler />
 
-              {locations.map((location) => (
-                <Marker key={location.id} position={location.position}>
-                  <Popup>
-                    <div>
-                      <h3>{location.name}</h3>
-                      <p>{location.desc}</p>
-                      <p>
-                        <strong>Koordinat:</strong>
-                      </p>
-                      <p>Lat: {location.position[0]}</p>
-                      <p>Lng: {location.position[1]}</p>
-                    </div>
-                  </Popup>
-                </Marker>
+              <FeatureGroup>
+                <EditControl
+                  onCreated={_created}
+                  position="topright"
+                  draw={{
+                    rectangle: false,
+                    circle: false,
+                    circlemarker: false,
+                    marker: false,
+                    polygon: false,
+                  }}
+                ></EditControl>
+              </FeatureGroup>
+
+              {ruasJalan.map((ruas, i) => (
+                <>
+                  <Polyline
+                    key={i}
+                    positions={[ruas.pathsDecoded]}
+                    color="blue"
+                    weight={4}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <span className="font-semibold">{ruas.nama_ruas}</span>
+                        <p>Panjang: {ruas.panjang}</p>
+                        <p>Keterangan: {ruas.keterangan}</p>
+                        <button onClick={() => hapusRuas(ruas.id)}>
+                          Hapus
+                        </button>
+                      </div>
+                    </Popup>
+                  </Polyline>
+                </>
               ))}
 
-              {newLocation && (
-                <Marker position={[newLocation.lat, newLocation.lng]}>
-                  <Popup>
-                    <form onSubmit={handleFormSubmit}>
-                      <div>
-                        <label>Nama Lokasi:</label>
-                        <input
-                          type="text"
-                          value={locationForm.name}
-                          onChange={(e) =>
-                            setLocationForm({
-                              ...locationForm,
-                              name: e.target.value,
-                            })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label>Deskripsi:</label>
-                        <textarea
-                          value={locationForm.desc}
-                          onChange={(e) =>
-                            setLocationForm({
-                              ...locationForm,
-                              desc: e.target.value,
-                            })
-                          }
-                          required
-                        />
-                      </div>
-                      <button type="submit">Tambahkan</button>
-                    </form>
-                  </Popup>
-                </Marker>
-              )}
+              {/*  */}
             </MapContainer>
           </div>
         </div>
@@ -249,4 +506,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default RuasJalan;

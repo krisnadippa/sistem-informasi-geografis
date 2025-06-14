@@ -6,6 +6,7 @@
   z-index: 1000; /* Pastikan lebih tinggi dari z-index peta */
 
   width: 400px; /* Lebar form */
+  max-width: calc(100vw - 40px); /* Responsif untuk layar kecil */
   max-height: calc(
     100vh - 40px
   ); /* Batas tinggi maksimal agar tidak keluar layar */
@@ -26,6 +27,7 @@
   align-items: center;
   padding: 16px 24px;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .form-header h3 {
@@ -49,11 +51,35 @@
   padding: 16px 24px;
   overflow-y: auto; /* Aktifkan scroll jika konten melebihi tinggi */
   flex-grow: 1; /* Memastikan body mengisi ruang yang tersedia */
+  min-height: 0; /* Important untuk flexbox scrolling */
+}
+
+/* Custom scrollbar untuk body form */
+.form-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.form-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.form-body::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 /* Grup Input & Label */
 .form-group {
   margin-bottom: 1rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0; /* Remove margin from last item */
 }
 
 .form-group label {
@@ -71,17 +97,20 @@
 /* Style untuk semua input, select */
 .form-body input[type="text"],
 .form-body input[type="number"],
-.form-body select {
+.form-body select,
+.form-body textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.9rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; /* Ensure padding doesn't cause overflow */
 }
 
 .form-body input:focus,
-.form-body select:focus {
+.form-body select:focus,
+.form-body textarea:focus {
   outline: none;
   border-color: #3b82f6; /* Warna biru saat fokus */
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
@@ -90,6 +119,12 @@
 .form-body input[readonly] {
   background-color: #f3f4f6;
   cursor: not-allowed;
+}
+
+.form-body textarea {
+  resize: vertical; /* Allow vertical resize only */
+  min-height: 80px;
+  max-height: 120px; /* Limit max height */
 }
 
 /* Footer Form (Area Tombol) */
@@ -102,6 +137,7 @@
   background-color: #f9fafb;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* Styling Tombol */
@@ -114,6 +150,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   transition: background-color 0.2s;
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .button-primary {
@@ -124,6 +161,11 @@
   background-color: #1d4ed8;
 }
 
+.button-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .button-secondary {
   background-color: #e5e7eb;
   color: #374151;
@@ -131,6 +173,95 @@
 }
 .button-secondary:hover {
   background-color: #d1d5db;
+}
+
+/* Modal Overlay for Edit Form */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 600px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content h2 {
+  margin: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 1.25rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Form Grid for Edit Modal */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.form-grid .form-group {
+  margin-bottom: 0;
+}
+
+/* Full width fields */
+.form-grid .form-group:has(textarea),
+.form-grid .form-group:first-child {
+  grid-column: 1 / -1;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Custom scrollbar untuk form grid */
+.form-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.form-grid::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.form-grid::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 /* Home.css */
@@ -453,6 +584,7 @@ button:hover {
   background-color: #e0e0e0;
 }
 
+/* Responsive Design */
 @media (max-width: 992px) {
   .sidebar {
     display: none;
@@ -460,6 +592,13 @@ button:hover {
 
   .menu-toggle {
     display: flex;
+  }
+
+  .add-form-container {
+    right: 10px;
+    top: 10px;
+    width: calc(100vw - 20px);
+    max-width: 400px;
   }
 }
 
@@ -481,5 +620,92 @@ button:hover {
     right: 20px;
     left: 20px;
     max-width: none;
+  }
+
+  .add-form-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-grid .form-group:has(textarea),
+  .form-grid .form-group:first-child {
+    grid-column: 1;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .button-primary,
+  .modal-actions .button-secondary {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-height: 600px) {
+  .add-form-container {
+    top: 10px;
+    max-height: calc(100vh - 20px);
+  }
+
+  .modal-content {
+    max-height: calc(100vh - 20px);
+  }
+
+  .form-body,
+  .form-grid {
+    padding: 12px 24px;
+  }
+}
+
+.focused-ruas-info {
+  background: #f0f8ff;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.focused-ruas-info h4 {
+  margin: 0 0 10px 0;
+  color: #007bff;
+  font-size: 14px;
+}
+
+.focused-ruas-info p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.header-notification {
+  background: #28a745;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  display: inline-block;
+  margin-left: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
   }
 }
